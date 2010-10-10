@@ -50,14 +50,22 @@ def GetYoutubeVideoInfo(videoID,eurl=None):
 		params = urllib.urlencode({'video_id':videoID})
 	else :
 		params = urllib.urlencode({'video_id':videoID, 'eurl':eurl})
+	Log("GetYoutubeVideoInfo params: %s\n" % params)
+
 	conn = httplib.HTTPConnection("www.youtube.com")
 	conn.request("GET","/get_video_info?&%s"%params)
 	response = conn.getresponse()
+	Log("GetYoutubeVideoInfo response: %s\n" % response)
 	data = response.read()
+	Log("GetYoutubeVideoInfo data: %s\n" % data)
 	video_info = dict((k,urllib.unquote_plus(v)) for k,v in (nvp.split('=') for nvp in data.split('&')))
-	conn.request('GET','/get_video?video_id=%s&t=%s' %( video_info['video_id'],video_info['token']))
+	request_parms = '/get_video?video_id=%s&t=%s' %( video_info['video_id'],video_info['token'])
+	Log("GetYoutubeVideoInfo request_parms: %s\n" % request_parms)
+	conn.request('GET', request_parms)
 	response = conn.getresponse()
+	Log("GetYoutubeVideoInfo response: %s\n" % response)
 	direct_url = response.getheader('location')
+	Log("GetYoutubeVideoInfo direct_url: %s\n" % direct_url)
 	return direct_url,video_info 
 
 def RegexYoutubeURL(pattern, url):
