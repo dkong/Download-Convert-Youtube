@@ -6,14 +6,18 @@ import sys
 import os
 import subprocess
 import win32com.client
+import youtube_dl
 
 YOUTUBE_RE1 = r'http:\/\/www\.youtube\.com\/watch(\?|#!|#)v(ideos)?=([\w-]+)'
 YOUTUBE_RE2 = r'http:\/\/www\.youtube\.com\/user\/\w+#(.\/)+([\w-]+)'
 WORKING_DIR = "c:\\youtube\\"
 
+python_exe = 'c:/python26/python.exe'
+youtube_dl_py = 'c:/youtube/youtube_dl.py'
+
 skipDownload = False
 convertMP3 = True
-convertMP4 = True
+convertMP4 = False
 
 logFile = None
 
@@ -137,7 +141,6 @@ def ConvertFLVtoMP3(flvFile, mp3File):
     command = 'ffmpeg.exe -y -i "%s" -vn "%s"' % (flvFile, mp3File)
     Log( "Running command %s" % command )
     return os.system(command)
-
 def ConvertFLVtoMP4(flvFile, mp4File):
     if os.path.exists(mp4File):
         Log("MP4 %s already exists locally.  Skipping conversion\n" % mp4File)
@@ -155,27 +158,30 @@ def OpeniTunes(filename):
 def Main():
     youtubeID = GetYoutubeVideoIDFromURL(youtubeURL)
     if youtubeID == None:
-        print "Unable to parse regex for url: %s\n" % (youtubeURL)
-        sys.exit(1)
+         print "Unable to parse regex for url: %s\n" % (youtubeURL)
+         sys.exit(1)
+
+    os.chdir(WORKING_DIR)
 
     CreateLog(youtubeID)
-        
     Log("Youtube Video ID: " + youtubeID + "\n")
 
-    flvInfo = DownloadFLV(youtubeID)
-    youtubeTitle = flvInfo['title']
+    # Get vide title        
+    process = subprocess.Popen([python_exe, youtube_dl_py, '-e', youtubeURL], shell=False, stdout=subprocess.PIPE)
+    youtubeTitle = process.communicate()[0].strip()
     Log("Youtube Video Title: " + youtubeTitle + "\n")
 
-    try:
-        unicode_filename = unicode(youtubeTitle)
-    except:
-        unicode_filename = unicode(youtubeID)
-    filename = slugify(unicode_filename)
-    Log("slugify filename: " + filename + "\n")
+    # Download flv
+    Log( "Before dl" )
+    subprocess.call("%s %s -lc %s" % (python_exe, youtube_dl_py, youtubeURL), shell=False)
+    Log( "After dl" )
+    # TODO: Check for errors    
 
-    localFLV = os.path.join(WORKING_DIR, youtubeID+'.flv')
-    localMP3 = os.path.join(WORKING_DIR, filename+'.mp3')
-    localMP4 = os.path.join(WORKING_DIR, filename+'.mp4')
+    baseFilename = youtubeTitle + "-" + youtubeID 
+
+    localFLV = os.path.join(WORKING_DIR, baseFilename+'.flv')
+    localMP3 = os.path.join(WORKING_DIR, baseFilename+'.mp3')
+    localMP4 = os.path.join(WORKING_DIR, baseFilename+'.mp4')
     Log("localFLV: " + localFLV + "\n")
     Log("localMP3: " + localMP3 + "\n")
     Log("localMP4: " + localMP4 + "\n")
@@ -186,6 +192,6 @@ def Main():
     if convertMP3 and ConvertFLVtoMP3(localFLV, localMP3) == 0:
         OpeniTunes(localMP3)
 
-    CloseLog()                
+    #CloseLog()                
 
 Main()
