@@ -17,7 +17,7 @@ youtube_dl_py = 'c:/youtube/youtube_dl.py'
 
 skipDownload = False
 convertMP3 = True
-convertMP4 = False
+convertMP4 = True
 
 logFile = None
 
